@@ -1,0 +1,44 @@
+# Core Dependencies
+python>=3.9
+
+# Embedding Models
+sentence-transformers>=2.2.0
+transformers>=4.30.0
+torch>=2.0.0
+
+# Vector Database
+qdrant-client>=1.7.0
+
+# RAG Framework
+langchain>=0.1.0
+langchain-community>=0.0.20
+langchain-openai>=0.0.5
+
+# Structured Output
+dspy-ai>=2.4.0
+guidance>=0.1.0
+
+# Evaluation
+ragas>=0.1.0
+chatarena>=0.1.0
+
+# LLM APIs
+openai>=1.0.0
+anthropic>=0.7.0
+
+# Utilities
+python-dotenv>=1.0.0
+pyyaml>=6.0
+pandas>=2.0.0
+numpy>=1.24.0
+matplotlib>=3.7.0
+seaborn>=0.12.0
+tqdm>=4.65.0
+
+# Development
+jupyter>=1.0.0
+ipykernel>=6.25.0
+pytest>=7.4.0
+black>=23.7.0
+flake8>=6.1.0
+

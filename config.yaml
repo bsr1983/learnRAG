@@ -1,0 +1,70 @@
+# RAG System Configuration
+
+# Embedding Configuration
+embedding:
+  model_name: "BAAI/bge-large-zh"
+  model_kwargs:
+    device: "cuda"  # or "cpu"
+  encode_kwargs:
+    normalize_embeddings: true
+
+# Reranker Configuration
+reranker:
+  model_name: "BAAI/bge-reranker-base"
+  top_n: 3
+
+# Vector Database Configuration
+vector_store:
+  type: "qdrant"
+  url: "http://localhost:6333"
+  collection_name: "rag_documents"
+  distance: "Cosine"
+  vector_size: 1024  # bge-large-zh output dimension
+
+# Document Processing Configuration
+document:
+  chunk_size: 500
+  chunk_overlap: 50
+  separators: ["\n\n", "\n", "。", "！", "？", " ", ""]
+
+# Retrieval Configuration
+retrieval:
+  top_k: 5
+  search_type: "similarity"
+  use_reranker: true
+
+# RAG-Fusion Configuration
+rag_fusion:
+  enabled: true
+  num_queries: 3
+  fusion_method: "rrf"  # rrf, weighted_average, union
+  rrf_k: 60
+
+# LLM Configuration
+llm:
+  provider: "openai"  # openai, anthropic, local
+  model_name: "gpt-3.5-turbo"
+  temperature: 0.7
+  max_tokens: 1000
+  timeout: 30
+
+# Structured Output Configuration
+structured_output:
+  framework: "dspy"  # dspy, guidance
+  schema_type: "json"
+
+# Evaluation Configuration
+evaluation:
+  framework: "ragas"
+  metrics:
+    - faithfulness
+    - context_precision
+    - context_recall
+    - answer_relevance
+  dataset_path: "./data/evaluations/test_dataset.json"
+
+# Logging Configuration
+logging:
+  level: "INFO"
+  file: "./logs/rag_system.log"
+
