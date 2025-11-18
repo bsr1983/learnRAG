@@ -15,6 +15,7 @@ sys.path.insert(0, project_root)
 
 from embeddings.embed_model import EmbeddingModel
 from storage.qdrant_wrapper import QdrantClient
+from llm.llm_client import get_llm_client
 
 load_dotenv()
 
@@ -26,7 +27,8 @@ class RAGFusion:
         self,
         embedding_model_name: str = "BAAI/bge-large-zh",
         qdrant_url: str = "http://localhost:6333",
-        collection_name: str = "rag_documents"
+        collection_name: str = "rag_documents",
+        llm_provider: str = None  # None 表示从环境变量读取
     ):
         """初始化 RAG-Fusion 系统"""
         self.embedder = EmbeddingModel(model_name=embedding_model_name)
@@ -34,12 +36,18 @@ class RAGFusion:
             url=qdrant_url,
             collection_name=collection_name
         )
+        # 初始化 LLM 客户端
+        try:
+            self.llm_client = get_llm_client(provider=llm_provider)
+        except Exception as e:
+            print(f"警告: LLM 客户端初始化失败: {e}")
+            self.llm_client = None
     
     def generate_queries(
         self,
         original_query: str,
         num_queries: int = 3,
-        llm_provider: str = "openai"
+        llm_provider: str = None
     ) -> List[str]:
         """
         使用 LLM 生成多个改写查询
@@ -47,7 +55,7 @@ class RAGFusion:
         Args:
             original_query: 原始查询
             num_queries: 生成查询数量
-            llm_provider: LLM 提供商
+            llm_provider: LLM 提供商（如果为 None，使用初始化时的设置）
             
         Returns:
             改写后的查询列表
@@ -61,33 +69,34 @@ class RAGFusion:
 
 请只返回问题列表，每行一个问题，不要编号："""
         
-        if llm_provider == "openai":
+        # 如果没有 LLM 客户端，尝试创建
+        llm_client = self.llm_client
+        if llm_client is None:
             try:
-                from openai import OpenAI
-                client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
-                response = client.chat.completions.create(
-                    model="gpt-3.5-turbo",
-                    messages=[
-                        {"role": "user", "content": prompt}
-                    ],
-                    temperature=0.7
-                )
-                queries = response.choices[0].message.content.strip().split("\n")
-                queries = [q.strip() for q in queries if q.strip()]
-                # 确保包含原始查询
-                if original_query not in queries:
-                    queries.insert(0, original_query)
-                return queries[:num_queries]
+                llm_client = get_llm_client(provider=llm_provider)
             except Exception as e:
                 print(f"[LLM Error: {e}] 使用原始查询")
                 return [original_query]
-        else:
+        
+        try:
+            response = llm_client.generate(
+                prompt=prompt,
+                temperature=0.7
+            )
+            queries = response.strip().split("\n")
+            queries = [q.strip() for q in queries if q.strip()]
+            # 确保包含原始查询
+            if original_query not in queries:
+                queries.insert(0, original_query)
+            return queries[:num_queries]
+        except Exception as e:
+            print(f"[LLM Error: {e}] 使用原始查询")
             # 简单的启发式改写（如果没有 LLM）
             return [
                 original_query,
                 f"请详细解释{original_query}",
                 f"关于{original_query}，你能告诉我什么？"
-            ]
+            ][:num_queries]
     
     def reciprocal_rank_fusion(
         self,

@@ -3,9 +3,14 @@ Integrated RAG system with all components.
 Day 14: 系统整合
 """
 
-from typing import Dict, List
+import sys
 import os
+from typing import Dict, List
 from dotenv import load_dotenv
+
+# 添加项目根目录到 Python 路径
+project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, project_root)
 
 from retrieval.basic_rag_demo import BasicRAG
 from retrieval.rag_fusion_demo import RAGFusion

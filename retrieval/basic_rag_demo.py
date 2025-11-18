@@ -15,6 +15,7 @@ sys.path.insert(0, project_root)
 from embeddings.embed_model import EmbeddingModel
 from embeddings.reranker import Reranker
 from storage.qdrant_wrapper import QdrantClient
+from llm.llm_client import get_llm_client
 
 # 加载环境变量
 load_dotenv()
@@ -28,7 +29,8 @@ class BasicRAG:
         embedding_model_name: str = "BAAI/bge-large-zh",
         reranker_model_name: str = "BAAI/bge-reranker-base",
         qdrant_url: str = "http://localhost:6333",
-        collection_name: str = "rag_documents"
+        collection_name: str = "rag_documents",
+        llm_provider: str = None  # None 表示从环境变量读取
     ):
         """初始化 RAG 系统"""
         self.embedder = EmbeddingModel(model_name=embedding_model_name)
@@ -37,6 +39,12 @@ class BasicRAG:
             url=qdrant_url,
             collection_name=collection_name
         )
+        # 初始化 LLM 客户端
+        try:
+            self.llm_client = get_llm_client(provider=llm_provider)
+        except Exception as e:
+            print(f"警告: LLM 客户端初始化失败: {e}")
+            self.llm_client = None
         
         # 创建集合
         vector_size = self.embedder.get_dimension()
@@ -90,7 +98,7 @@ class BasicRAG:
         self,
         query: str,
         context: str,
-        llm_provider: str = "openai"
+        llm_provider: str = None
     ) -> str:
         """
         基于检索到的上下文生成答案
@@ -98,12 +106,12 @@ class BasicRAG:
         Args:
             query: 问题
             context: 检索到的上下文
-            llm_provider: LLM 提供商
+            llm_provider: LLM 提供商（如果为 None，使用初始化时的设置）
             
         Returns:
             生成的答案
         """
-        # 这里使用简单的 prompt，实际可以使用 LangChain
+        # 构建 prompt
         prompt = f"""基于以下上下文回答问题。如果上下文中没有相关信息，请说"根据提供的信息，我无法回答这个问题。"
 
 上下文：
@@ -113,23 +121,23 @@ class BasicRAG:
 
 答案："""
         
-        if llm_provider == "openai":
+        # 如果没有 LLM 客户端，尝试创建
+        llm_client = self.llm_client
+        if llm_client is None:
             try:
-                from openai import OpenAI
-                client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
-                response = client.chat.completions.create(
-                    model="gpt-3.5-turbo",
-                    messages=[
-                        {"role": "user", "content": prompt}
-                    ],
-                    temperature=0.7,
-                    max_tokens=500
-                )
-                return response.choices[0].message.content
+                llm_client = get_llm_client(provider=llm_provider)
             except Exception as e:
-                return f"[LLM Error: {e}] 请配置 OPENAI_API_KEY"
-        else:
-            return "[请配置 LLM]"
+                return f"[LLM Error: {e}] 请配置 LLM API Key（支持: OPENAI_API_KEY, DOUBAO_API_KEY, DASHSCOPE_API_KEY 等）"
+        
+        try:
+            answer = llm_client.generate(
+                prompt=prompt,
+                temperature=0.7,
+                max_tokens=500
+            )
+            return answer
+        except Exception as e:
+            return f"[LLM Error: {e}] 请检查 API Key 配置"
     
     def query(
         self,

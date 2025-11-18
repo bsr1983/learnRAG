@@ -19,11 +19,20 @@ pip install -r requirements.txt
 ### 2. 配置环境变量
 
 ```bash
-# 复制环境变量模板（如果 .env.example 存在）
-# cp .env.example .env
+# 复制环境变量模板
+cp .env.example .env
 
-# 编辑 .env 文件，至少配置：
-# OPENAI_API_KEY=your_key_here
+# 编辑 .env 文件，配置 LLM API Key
+# 推荐使用豆包（中文支持好，价格便宜）：
+# DOUBAO_API_KEY=your_doubao_api_key
+# LLM_PROVIDER=doubao
+
+# 或者使用 OpenAI：
+# OPENAI_API_KEY=your_openai_key
+# LLM_PROVIDER=openai
+
+# 支持的提供商：doubao, openai, qwen, ernie, zhipu
+# 详细配置说明请查看 docs/llm_providers.md
 ```
 
 ### 3. 启动 Qdrant（向量数据库）
