@@ -3,13 +3,18 @@ Basic RAG implementation.
 Day 5-7: 构建最小 RAG Demo
 """
 
-from typing import List, Dict
+import sys
 import os
+from typing import List, Dict
 from dotenv import load_dotenv
+
+# 添加项目根目录到 Python 路径
+project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, project_root)
 
 from embeddings.embed_model import EmbeddingModel
 from embeddings.reranker import Reranker
-from storage.qdrant_client import QdrantClient
+from storage.qdrant_wrapper import QdrantClient
 
 # 加载环境变量
 load_dotenv()

@@ -4,9 +4,11 @@ Day 3-4: 向量数据库
 """
 
 from typing import List, Dict, Optional, Any
+import uuid
+
+# 直接导入，文件名已重命名，不再冲突
 from qdrant_client import QdrantClient as QdrantSDK
 from qdrant_client.models import Distance, VectorParams, PointStruct
-import uuid
 
 
 class QdrantClient:
@@ -40,18 +42,21 @@ class QdrantClient:
     def create_collection(
         self,
         vector_size: int,
-        distance: Distance = Distance.COSINE
+        distance=None
     ) -> bool:
         """
         创建集合
         
         Args:
             vector_size: 向量维度
-            distance: 距离度量方式（COSINE, EUCLID, DOT）
+            distance: 距离度量方式（COSINE, EUCLID, DOT），默认为 COSINE
             
         Returns:
             是否创建成功
         """
+        if distance is None:
+            distance = Distance.COSINE
+        
         try:
             self.client.create_collection(
                 collection_name=self.collection_name,

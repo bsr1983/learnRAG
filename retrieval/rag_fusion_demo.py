@@ -3,13 +3,18 @@ RAG-Fusion implementation: Multi-query retrieval and fusion.
 Day 8-10: RAG-Fusion 与查询增强
 """
 
-from typing import List, Dict
+import sys
 import os
+from typing import List, Dict
 from dotenv import load_dotenv
 from collections import defaultdict
 
+# 添加项目根目录到 Python 路径
+project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, project_root)
+
 from embeddings.embed_model import EmbeddingModel
-from storage.qdrant_client import QdrantClient
+from storage.qdrant_wrapper import QdrantClient
 
 load_dotenv()
 

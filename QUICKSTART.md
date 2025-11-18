@@ -28,12 +28,113 @@ pip install -r requirements.txt
 
 ### 3. 启动 Qdrant（向量数据库）
 
+#### 方式一：直接运行（需要网络连接）
+
 ```bash
 # 使用 Docker 启动 Qdrant
 docker run -p 6333:6333 -p 6334:6334 qdrant/qdrant
 
 # 验证 Qdrant 运行正常
 curl http://localhost:6333/health
+```
+
+#### 方式二：手动通过镜像安装（离线/手动安装）
+
+如果您需要手动安装或网络连接不稳定，可以按以下步骤操作：
+
+> 💡 **提示**: 也可以使用提供的安装脚本快速完成安装：
+> ```bash
+> ./scripts/setup_qdrant.sh
+> ```
+
+**步骤 1: 下载镜像文件**
+
+在有网络的环境中，先下载 Qdrant 镜像并保存为 tar 文件：
+
+```bash
+# 拉取 Qdrant 镜像
+docker pull qdrant/qdrant:latest
+
+# 将镜像保存为 tar 文件（方便传输和备份）
+docker save qdrant/qdrant:latest -o qdrant-image.tar
+
+# 或者指定版本（推荐）
+docker pull qdrant/qdrant:v1.7.4
+docker save qdrant/qdrant:v1.7.4 -o qdrant-image-v1.7.4.tar
+```
+
+**步骤 2: 加载镜像到 Docker**
+
+将镜像文件传输到目标机器后，加载镜像：
+
+```bash
+# 加载镜像文件
+docker load -i qdrant-image.tar
+
+# 或者如果使用版本号
+docker load -i qdrant-image-v1.7.4.tar
+
+# 验证镜像已加载
+docker images | grep qdrant
+```
+
+**步骤 3: 运行 Qdrant 容器**
+
+```bash
+# 运行 Qdrant 容器（前台运行，可以看到日志）
+docker run -p 6333:6333 -p 6334:6334 qdrant/qdrant
+
+# 或者后台运行（推荐）
+docker run -d --name qdrant \
+  -p 6333:6333 \
+  -p 6334:6334 \
+  -v $(pwd)/qdrant_storage:/qdrant/storage \
+  qdrant/qdrant
+
+# 查看容器状态
+docker ps | grep qdrant
+
+# 查看日志
+docker logs qdrant
+
+# 停止容器
+docker stop qdrant
+
+# 启动已停止的容器
+docker start qdrant
+
+# 删除容器（注意：会删除数据，除非使用了数据卷）
+docker rm qdrant
+```
+
+**步骤 4: 验证安装**
+
+```bash
+# 检查健康状态
+curl http://localhost:6333/healthz
+
+# 或者使用浏览器访问
+# http://localhost:6333/dashboard
+```
+
+**常用 Docker 命令参考**
+
+```bash
+# 查看所有容器（包括已停止的）
+docker ps -a
+
+# 查看容器日志
+docker logs -f qdrant
+
+# 进入容器内部
+docker exec -it qdrant sh
+
+# 查看容器资源使用情况
+docker stats qdrant
+
+# 备份数据卷（如果使用了数据卷）
+docker run --rm -v qdrant_storage:/data -v $(pwd):/backup \
+  alpine tar czf /backup/qdrant-backup.tar.gz /data
 ```
 
 ### 4. 运行第一个示例
