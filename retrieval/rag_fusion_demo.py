@@ -115,15 +115,33 @@ class RAGFusion:
         """
         # 计算每个文档的 RRF 分数
         doc_scores = defaultdict(float)
-        doc_map = {}  # 存储文档内容
+        doc_map = {}  # 存储文档内容，使用文本内容作为唯一标识
         
-        for ranked_list in ranked_lists:
+        for list_idx, ranked_list in enumerate(ranked_lists):
             for rank, doc in enumerate(ranked_list, 1):
-                doc_id = doc.get("id", str(hash(doc.get("text", ""))))
-                doc_map[doc_id] = doc
+                # 使用文档 ID 作为唯一标识（优先），如果没有 ID 则使用文本内容
+                doc_id = doc.get("id")
+                doc_text = doc.get("text", "").strip()
+                
+                # 如果没有 ID，使用文本内容的 hash 作为 ID
+                if not doc_id:
+                    import hashlib
+                    doc_id = hashlib.md5(doc_text.encode()).hexdigest()
+                
+                # 如果文档已存在，保留分数更高的那个
+                if doc_id in doc_map:
+                    # 保留原始相似度分数更高的文档
+                    existing_score = doc_map[doc_id].get("score", 0)
+                    current_score = doc.get("score", 0)
+                    if current_score > existing_score:
+                        doc_map[doc_id] = doc.copy()
+                else:
+                    doc_map[doc_id] = doc.copy()
+                
+                # 累加 RRF 分数
                 doc_scores[doc_id] += 1 / (k + rank)
         
-        # 按分数排序
+        # 按 RRF 分数排序
         sorted_docs = sorted(
             doc_scores.items(),
             key=lambda x: x[1],
@@ -132,9 +150,12 @@ class RAGFusion:
         
         # 返回融合后的文档列表
         fused_results = []
-        for doc_id, score in sorted_docs:
+        for doc_id, fusion_score in sorted_docs:
             doc = doc_map[doc_id].copy()
-            doc["fusion_score"] = score
+            doc["fusion_score"] = fusion_score
+            # 保留原始相似度分数
+            if "score" not in doc:
+                doc["score"] = 0.0
             fused_results.append(doc)
         
         return fused_results
@@ -166,13 +187,22 @@ class RAGFusion:
         
         # 2. 对每个查询进行检索
         all_results = []
-        for q in queries:
+        for i, q in enumerate(queries, 1):
             query_vector = self.embedder.encode(q)
             results = self.vector_db.search(query_vector, top_k=top_k_per_query)
             all_results.append(results)
+            # 调试信息
+            print(f"  查询 {i} 检索到 {len(results)} 个结果")
+            if results:
+                unique_texts = set(r.get("text", "") for r in results)
+                print(f"    唯一文档: {len(unique_texts)}")
         
         # 3. 融合结果（使用 RRF）
         fused_results = self.reciprocal_rank_fusion(all_results)
+        
+        # 调试信息：检查融合后的结果
+        unique_after_fusion = set(doc.get("text", "") for doc in fused_results)
+        print(f"\n融合后: {len(fused_results)} 个结果，{len(unique_after_fusion)} 个唯一文档")
         
         return fused_results[:final_top_k]
 

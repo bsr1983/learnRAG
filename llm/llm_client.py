@@ -7,7 +7,13 @@ import os
 from typing import List, Dict, Optional, Any
 from dotenv import load_dotenv
 
-load_dotenv()
+# 确保从项目根目录加载 .env 文件
+project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+env_path = os.path.join(project_root, '.env')
+if os.path.exists(env_path):
+    load_dotenv(dotenv_path=env_path, override=True)
+else:
+    load_dotenv()  # 回退到默认行为
 
 
 class LLMClient:
@@ -57,7 +63,7 @@ class LLMClient:
                 "base_url": base_url or "https://api.openai.com/v1"
             },
             "doubao": {
-                "model": model_name or "doubao-pro-4k",  # 豆包模型
+                "model": model_name or "doubao-1-5-lite-32k-250115",  # 豆包模型
                 "api_key": api_key or os.getenv("DOUBAO_API_KEY"),
                 "base_url": base_url or "https://ark.cn-beijing.volces.com/api/v3"
             },

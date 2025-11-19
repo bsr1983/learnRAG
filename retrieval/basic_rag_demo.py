@@ -111,15 +111,24 @@ class BasicRAG:
         Returns:
             生成的答案
         """
-        # 构建 prompt
-        prompt = f"""基于以下上下文回答问题。如果上下文中没有相关信息，请说"根据提供的信息，我无法回答这个问题。"
+        # 构建 prompt（优化版，更明确地要求使用上下文）
+        prompt = f"""你是一个专业的AI助手。请基于以下提供的上下文信息回答问题。
 
-上下文：
+【上下文信息】
 {context}
 
-问题：{query}
+【问题】
+{query}
 
-答案："""
+【要求】
+1. 仔细阅读上下文信息，提取所有相关信息
+2. 基于上下文中的内容，全面、详细地回答问题
+3. 如果上下文中包含多个相关文档，请整合所有信息，给出完整的答案
+4. 回答要有条理，可以分点说明
+5. 如果上下文中确实没有相关信息，才说"根据提供的信息，我无法回答这个问题"
+6. 尽量使用上下文中的具体内容，不要遗漏重要信息
+
+【答案】"""
         
         # 如果没有 LLM 客户端，尝试创建
         llm_client = self.llm_client
@@ -133,7 +142,7 @@ class BasicRAG:
             answer = llm_client.generate(
                 prompt=prompt,
                 temperature=0.7,
-                max_tokens=500
+                max_tokens=1000  # 增加 token 数量，允许更详细的回答
             )
             return answer
         except Exception as e:
